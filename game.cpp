@@ -23,40 +23,31 @@ void CustomQueue_init(CustomQueue *q) {
     q->top = 0;
 }
 
-void CustomQueue_clear(CustomQueue *q) {
-    q->top = 0;
+bool CustomQueue_isEmpty(const CustomQueue *q) {
+    return q->top == 0;
 }
 
-bool CustomQueue_isEmpty(CustomQueue *q) {
-    return (q->top == 0);
-}
-
-bool CustomQueue_isFull(CustomQueue *q) {
-    return (q->top >= CustomQueue::ukuran);
+bool CustomQueue_isFull(const CustomQueue *q) {
+    return q->top >= CustomQueue::ukuran;
 }
 
 void CustomQueue_enqueue(CustomQueue *q, const string &data) {
     if (!CustomQueue_isFull(q)) {
-        q->isi[q->top] = data;
-        q->top++;
+        q->isi[q->top++] = data;
     }
 }
 
 void CustomQueue_dequeue(CustomQueue *q) {
     if (!CustomQueue_isEmpty(q)) {
-        for (int i = 0; i < q->top - 1; i++) {
+        for (int i = 0; i < q->top - 1; ++i) {
             q->isi[i] = q->isi[i + 1];
         }
-        q->top--;
+        --q->top;
     }
 }
 
-vector<string> CustomQueue_getContents(CustomQueue *q) {
-    vector<string> contents;
-    for (int i = 0; i < q->top; i++) {
-        contents.push_back(q->isi[i]);
-    }
-    return contents;
+vector<string> CustomQueue_getContents(const CustomQueue *q) {
+    return vector<string>(q->isi, q->isi + q->top);
 }
 
 void CustomQueue_updateBack(CustomQueue *q, const string &data) {
@@ -94,16 +85,10 @@ void Graph_addEdge(Graph *g, int src, int dest) {
     }
 }
 
-bool Graph_isConnected(Graph *g, int src, int dest) {
-    if (src < 0 || src >= g->numVertices || dest < 0 || dest >= g->numVertices) {
+bool Graph_isConnected(const Graph *g, int src, int dest) {
+    if (src < 0 || src >= g->numVertices || dest < 0 || dest >= g->numVertices)
         return false;
-    }
-    for (int neighbor : g->adjLists[src]) {
-        if (neighbor == dest) {
-            return true;
-        }
-    }
-    return false;
+    return find(g->adjLists[src].begin(), g->adjLists[src].end(), dest) != g->adjLists[src].end();
 }
 
 const int LEBAR_LAYAR = 110;
@@ -168,11 +153,10 @@ void simpanScore(const string &user, int score) {
 void gambarKeBuffer(int x, int y, const string &teks, WORD atribut = 7) {
     if (y >= TINGGI_LAYAR || x >= LEBAR_LAYAR)
         return;
-    for (size_t i = 0; i < teks.length(); ++i) {
-        if (x + i < LEBAR_LAYAR) {
-            consoleBuffer[x + i + LEBAR_LAYAR * y].Char.AsciiChar = teks[i];
-            consoleBuffer[x + i + LEBAR_LAYAR * y].Attributes = atribut;
-        }
+    for (size_t i = 0; i < teks.length() && x + i < LEBAR_LAYAR; ++i) {
+        auto &cell = consoleBuffer[x + i + LEBAR_LAYAR * y];
+        cell.Char.AsciiChar = teks[i];
+        cell.Attributes = atribut;
     }
 }
 
@@ -184,10 +168,10 @@ void tampilkanBuffer() {
 }
 
 void isiJalur() {
-    srand((unsigned int)time(0));
-    for (int i = 0; i < TOTAL_LINTASAN; i++) {
+    srand(static_cast<unsigned int>(time(0)));
+    for (int i = 0; i < TOTAL_LINTASAN; ++i) {
         CustomQueue_init(&jalur[i]);
-        for (int j = 0; j < PANJANG_JALAN; j++) {
+        for (int j = 0; j < PANJANG_JALAN; ++j) {
             CustomQueue_enqueue(&jalur[i], (i % 2 == 1) ? SIMBOL_JALAN : SIMBOL_KOSONG);
         }
     }
@@ -195,31 +179,28 @@ void isiJalur() {
 
 bool cekFinishLineCross() {
     int lintasanMobil = posisiMobil * 2 + 1;
-    vector<string> contents = CustomQueue_getContents(&jalur[lintasanMobil]);
-    if (!contents.empty() && contents[0] == FINISH_LINE_MARKER)
-        return true;
-    return false;
+    auto contents = CustomQueue_getContents(&jalur[lintasanMobil]);
+    return !contents.empty() && contents[0] == FINISH_LINE_MARKER;
 }
 
 void cekTabrakan() {
     int lintasanMobil = posisiMobil * 2 + 1;
-    vector<string> contents = CustomQueue_getContents(&jalur[lintasanMobil]);
+    auto contents = CustomQueue_getContents(&jalur[lintasanMobil]);
     if (contents.size() > 1 && !invulnerable) {
         if (contents[0] != FINISH_LINE_MARKER && contents[1] != FINISH_LINE_MARKER) {
             string depan = contents[0] + contents[1];
             if (depan.find(RINTANGAN_MARKER) != string::npos) {
-                if (soundEnabled) {
+                if (soundEnabled)
                     PlaySound(TEXT("hit.wav"), NULL, SND_FILENAME | SND_ASYNC);
-                }
                 nyawa--;
                 invulnerable = true;
                 invulnerableStart = GetTickCount();
             }
         }
     }
-    if (contents.size() > 0) {
-        int maxCek = min(4, (int)contents.size());
-        string depanKoin = "";
+    if (!contents.empty()) {
+        int maxCek = min(4, static_cast<int>(contents.size()));
+        string depanKoin;
         for (int i = 0; i < maxCek; ++i) {
             if (contents[i] == FINISH_LINE_MARKER)
                 continue;
@@ -228,9 +209,8 @@ void cekTabrakan() {
         size_t posKoin = depanKoin.find(KOIN_MARKER);
         if (posKoin != string::npos) {
             koinShowCounter = KOIN_SHOW_FRAMES;
-            if (soundEnabled) {
+            if (soundEnabled)
                 PlaySound(TEXT("coin.wav"), NULL, SND_FILENAME | SND_ASYNC);
-            }
             int cellIdx = 0, charCount = 0;
             for (; cellIdx < maxCek; ++cellIdx) {
                 if (contents[cellIdx] == FINISH_LINE_MARKER)
@@ -239,9 +219,8 @@ void cekTabrakan() {
                     break;
                 charCount += contents[cellIdx].size();
             }
-            if (cellIdx < maxCek && contents[cellIdx] != FINISH_LINE_MARKER) {
+            if (cellIdx < maxCek && contents[cellIdx] != FINISH_LINE_MARKER)
                 CustomQueue_setAt(&jalur[lintasanMobil], cellIdx, (lintasanMobil % 2 == 1) ? SIMBOL_JALAN : SIMBOL_KOSONG);
-            }
         }
     }
 }
@@ -268,16 +247,14 @@ void pindahMobil() {
 }
 
 void jalurBerjalan() {
-    for (int i = 0; i < TOTAL_LINTASAN; i++) {
+    for (int i = 0; i < TOTAL_LINTASAN; ++i) {
         CustomQueue_dequeue(&jalur[i]);
         CustomQueue_enqueue(&jalur[i], (i % 2 == 1) ? SIMBOL_JALAN : SIMBOL_KOSONG);
     }
 }
 
 void tampilkanEndScreen(int score, bool failed, const string &user) {
-    for (int i = 0; i < LEBAR_LAYAR * TINGGI_LAYAR; ++i) {
-        consoleBuffer[i] = {' ', 7};
-    }
+    fill_n(consoleBuffer, LEBAR_LAYAR * TINGGI_LAYAR, CHAR_INFO{' ', 7});
     string msg = "GAME OVER!";
     string msg3 = "Nama: " + user;
     string msg4 = "Skor: " + to_string(score);
@@ -287,25 +264,14 @@ void tampilkanEndScreen(int score, bool failed, const string &user) {
     int boxY = TINGGI_LAYAR / 2 - boxHeight / 2;
     string topBot = "+" + string(boxWidth - 2, '-') + "+";
     gambarKeBuffer(boxX, boxY, topBot, 14);
-    for (int i = 1; i < boxHeight - 1; ++i) {
+    for (int i = 1; i < boxHeight - 1; ++i)
         gambarKeBuffer(boxX, boxY + i, "|" + string(boxWidth - 2, ' ') + "|", 14);
-    }
-    gambarKeBuffer(boxX, boxY + boxHeight - 1, topBot, 14);
     gambarKeBuffer(boxX + (boxWidth - msg.length()) / 2, boxY + 1, msg, 12);
     gambarKeBuffer(boxX + (boxWidth - msg3.length()) / 2, boxY + 3, msg3, 11);
     gambarKeBuffer(boxX + (boxWidth - msg4.length()) / 2, boxY + 4, msg4, 11);
+    gambarKeBuffer(boxX, boxY + boxHeight - 1, topBot, 14);
     tampilkanBuffer();
     Sleep(3000);
-}
-
-void tampilkanFinishLine() {
-    for (int baris = 0; baris < TOTAL_LINTASAN; ++baris) {
-        gambarKeBuffer(4 + (PANJANG_JALAN - 1) * 2, 4 + baris, FINISH_LINE_ART, 13);
-    }
-}
-
-int getTrackLength(int level) {
-    return 300 + (level - 1) * 50;
 }
 
 void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, string user) {
@@ -338,29 +304,27 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
 
     while (nyawa > 0) {
         if (!finishLineInserted && distanceToFinish <= 0) {
-            for (int i = 0; i < TOTAL_LINTASAN; ++i) {
+            for (int i = 0; i < TOTAL_LINTASAN; ++i)
                 CustomQueue_setAt(&jalur[i], PANJANG_JALAN - 1, FINISH_LINE_MARKER);
-            }
             finishLineInserted = true;
             finishLinePos = PANJANG_JALAN - 1;
         }
 
-        for (int i = 0; i < LEBAR_LAYAR * TINGGI_LAYAR; ++i) {
-            consoleBuffer[i] = {' ', 7};
-        }
+        fill_n(consoleBuffer, LEBAR_LAYAR * TINGGI_LAYAR, CHAR_INFO{' ', 7});
 
         gambarKeBuffer(0, 0, "Kontrol: W = atas, S = bawah", 15);
         gambarKeBuffer(0, 1, "Level: " + to_string(currentLevel), 14);
-        gambarKeBuffer(25, 1, "| Jarak ke finish: " + to_string(distanceToFinish), 14);
-        string nyawaStr = "Nyawa: ";
-        for (int i = 0; i < nyawa; ++i)
-            nyawaStr += "\3 ";
-        gambarKeBuffer(80, 1, nyawaStr, 12);
-        gambarKeBuffer(50, 1, "| Score: " + to_string(score), 11);
+        gambarKeBuffer(15, 1, "| Score: " + to_string(score), 11);
+        int scoreStrLen = 9 + to_string(score).length();
+        int plus300X = 15 + scoreStrLen + 1;
         if (koinShowCounter > 0) {
-            gambarKeBuffer(65, 1, "+300", 14);
+            gambarKeBuffer(plus300X, 1, "+300", 14);
             koinShowCounter--;
         }
+        string nyawaStr = "Nyawa: ";
+        nyawaStr += string(nyawa, '\3');
+        int nyawaX = plus300X + (koinShowCounter > 0 ? 6 : 1);
+        gambarKeBuffer(nyawaX, 1, "| " + nyawaStr, 12);
 
         string bingkai(PANJANG_JALAN * 2 + 6, '=');
         gambarKeBuffer(2, 3, bingkai, 8);
@@ -370,9 +334,9 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
             gambarKeBuffer(4 + PANJANG_JALAN * 2, 4 + i, "||", 8);
         }
 
-        for (int baris = 0; baris < TOTAL_LINTASAN; baris++) {
-            vector<string> contents = CustomQueue_getContents(&jalur[baris]);
-            string lineContent = "";
+        for (int baris = 0; baris < TOTAL_LINTASAN; ++baris) {
+            auto contents = CustomQueue_getContents(&jalur[baris]);
+            string lineContent;
             for (const auto &s : contents)
                 lineContent += s;
 
@@ -383,26 +347,20 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
                 gambarKeBuffer(4 + pos, 4 + baris, RINTANGAN_ART, 12);
                 pos += RINTANGAN_MARKER.length();
             }
-
-            pos = lineContent.find(KOIN_MARKER);
-            while (pos != string::npos) {
+            pos = 0;
+            while ((pos = lineContent.find(KOIN_MARKER, pos)) != string::npos) {
                 gambarKeBuffer(4 + pos, 4 + baris, KOIN_ART, 14);
-                pos = lineContent.find(KOIN_MARKER, pos + KOIN_MARKER.length());
+                pos += KOIN_MARKER.length();
             }
-
-            pos = lineContent.find(FINISH_LINE_MARKER);
-            while (pos != string::npos) {
+            pos = 0;
+            while ((pos = lineContent.find(FINISH_LINE_MARKER, pos)) != string::npos) {
                 gambarKeBuffer(4 + pos, 4 + baris, FINISH_LINE_ART, 13);
-                pos = lineContent.find(FINISH_LINE_MARKER, pos + FINISH_LINE_MARKER.length());
+                pos += FINISH_LINE_MARKER.length();
             }
         }
 
         int posisiY_mobil = 4 + posisiMobil * 2;
-        bool tampilkanMobil = true;
-        if (invulnerable) {
-            DWORD blinkTime = (GetTickCount() - invulnerableStart) / 150;
-            tampilkanMobil = (blinkTime % 2 == 0);
-        }
+        bool tampilkanMobil = !invulnerable || ((GetTickCount() - invulnerableStart) / 150 % 2 == 0);
         if (tampilkanMobil) {
             gambarKeBuffer(6, posisiY_mobil, MOBIL[0], invulnerable ? 14 : 10);
             gambarKeBuffer(6, posisiY_mobil + 1, MOBIL[1], invulnerable ? 14 : 10);
@@ -418,65 +376,37 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
         spawnCounter++;
         koinSpawnCounter++;
 
-        if (!afterFinishLine && finishLineInserted) {
-            int lintasanMobil = posisiMobil * 2 + 1;
-            vector<string> contents = CustomQueue_getContents(&jalur[lintasanMobil]);
-            if (!contents.empty() && contents[0] == FINISH_LINE_MARKER)
-                afterFinishLine = true;
-        }
+        if (!afterFinishLine && finishLineInserted && cekFinishLineCross())
+            afterFinishLine = true;
 
         if (finishLineInserted && finishLinePos >= 0) {
-            for (int i = 0; i < TOTAL_LINTASAN; ++i) {
-                for (int j = finishLinePos + 1; j < PANJANG_JALAN; ++j) {
+            for (int i = 0; i < TOTAL_LINTASAN; ++i)
+                for (int j = finishLinePos + 1; j < PANJANG_JALAN; ++j)
                     CustomQueue_setAt(&jalur[i], j, (i % 2 == 1) ? SIMBOL_JALAN : SIMBOL_KOSONG);
-                }
-            }
         }
 
         bool allowSpawn = !finishLineInserted;
         if (allowSpawn) {
-            int kecepatan = max(10, 40 - currentLevel * 2);
             int spawnRate = max(5, static_cast<int>((30 - currentLevel * 2) * spawnMultiplier));
-
             if (spawnCounter >= spawnRate) {
                 spawnCounter = 0;
-                if (!finishLineInserted || finishLinePos == -1 || finishLinePos == PANJANG_JALAN - 1) {
-                    int mode = rand() % 10;
-                    if (mode < 3) {
-                        int lajurAman = rand() % TOTAL_CABANG;
-                        vector<int> tidakAman;
-                        for (int i = 0; i < TOTAL_CABANG; ++i)
-                            if (i != lajurAman)
-                                tidakAman.push_back(i);
-                        if (tidakAman.size() >= 2) {
-                            int idx1 = rand() % tidakAman.size();
-                            int idx2;
-                            do {
-                                idx2 = rand() % tidakAman.size();
-                            } while (idx2 == idx1);
-                            if (!finishLineInserted || finishLinePos == -1 || finishLinePos == PANJANG_JALAN - 1) {
-                                CustomQueue_updateBack(&jalur[tidakAman[idx1] * 2 + 1], RINTANGAN_MARKER);
-                                CustomQueue_updateBack(&jalur[tidakAman[idx2] * 2 + 1], RINTANGAN_MARKER);
-                            }
-                        } else {
-                            if (!finishLineInserted || finishLinePos == -1 || finishLinePos == PANJANG_JALAN - 1) {
-                                CustomQueue_updateBack(&jalur[tidakAman[0] * 2 + 1], RINTANGAN_MARKER);
-                            }
-                        }
-                    } else {
-                        int lajurAman = rand() % TOTAL_CABANG;
-                        vector<int> tidakAman;
-                        for (int i = 0; i < TOTAL_CABANG; ++i)
-                            if (i != lajurAman)
-                                tidakAman.push_back(i);
-                        int target = tidakAman[rand() % tidakAman.size()];
-                        if (!finishLineInserted || finishLinePos == -1 || finishLinePos == PANJANG_JALAN - 1) {
-                            CustomQueue_updateBack(&jalur[target * 2 + 1], RINTANGAN_MARKER);
-                        }
-                    }
+                int mode = rand() % 10;
+                int lajurAman = rand() % TOTAL_CABANG;
+                vector<int> tidakAman;
+                for (int i = 0; i < TOTAL_CABANG; ++i)
+                    if (i != lajurAman)
+                        tidakAman.push_back(i);
+                if (mode < 3 && tidakAman.size() >= 2) {
+                    int idx1 = rand() % tidakAman.size();
+                    int idx2;
+                    do { idx2 = rand() % tidakAman.size(); } while (idx2 == idx1);
+                    CustomQueue_updateBack(&jalur[tidakAman[idx1] * 2 + 1], RINTANGAN_MARKER);
+                    CustomQueue_updateBack(&jalur[tidakAman[idx2] * 2 + 1], RINTANGAN_MARKER);
+                } else {
+                    int target = tidakAman[rand() % tidakAman.size()];
+                    CustomQueue_updateBack(&jalur[target * 2 + 1], RINTANGAN_MARKER);
                 }
             }
-
             static int nextKoinFrame = 0;
             if (nextKoinFrame == 0)
                 nextKoinFrame = 45 + rand() % 26;
@@ -485,27 +415,19 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
                 nextKoinFrame = 45 + rand() % 26;
                 int lajurKoin = rand() % TOTAL_CABANG;
                 int lintasanKoin = lajurKoin * 2 + 1;
-                vector<string> isi = CustomQueue_getContents(&jalur[lintasanKoin]);
-                bool aman = true;
-                int cekN = 3;
-                if (isi.size() >= cekN) {
-                    for (int i = 1; i <= cekN; ++i) {
-                        const string &cell = isi[isi.size() - i];
-                        if (cell.find(RINTANGAN_MARKER) != string::npos || cell.find(KOIN_MARKER) != string::npos) {
-                            aman = false;
-                            break;
-                        }
-                    }
-                } else
-                    aman = false;
-                if (aman && (!finishLineInserted || finishLinePos == -1 || finishLinePos == PANJANG_JALAN - 1)) {
-                    CustomQueue_updateBack(&jalur[lintasanKoin], KOIN_MARKER);
+                auto isi = CustomQueue_getContents(&jalur[lintasanKoin]);
+                bool aman = isi.size() >= 3;
+                for (int i = 1; aman && i <= 3; ++i) {
+                    const auto &cell = isi[isi.size() - i];
+                    if (cell.find(RINTANGAN_MARKER) != string::npos || cell.find(KOIN_MARKER) != string::npos)
+                        aman = false;
                 }
+                if (aman)
+                    CustomQueue_updateBack(&jalur[lintasanKoin], KOIN_MARKER);
             }
         } else {
-            for (int i = 0; i < TOTAL_LINTASAN; i++) {
+            for (int i = 0; i < TOTAL_LINTASAN; ++i)
                 CustomQueue_updateBack(&jalur[i], (i % 2 == 1) ? SIMBOL_JALAN : SIMBOL_KOSONG);
-            }
         }
 
         score += static_cast<int>(scoreMultiplier * currentLevel);
@@ -515,13 +437,11 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
         if (finishLineInserted && cekFinishLineCross()) {
             finishLineCrossed = true;
             afterFinishLine = true;
-            if (soundEnabled) {
+            if (soundEnabled)
                 PlaySound(TEXT("level.wav"), NULL, SND_FILENAME | SND_ASYNC);
-            }
             int transitionFrames = 50;
             for (int t = 0; t < transitionFrames; ++t) {
-                for (int i = 0; i < LEBAR_LAYAR * TINGGI_LAYAR; ++i)
-                    consoleBuffer[i] = {' ', 7};
+                fill_n(consoleBuffer, LEBAR_LAYAR * TINGGI_LAYAR, CHAR_INFO{' ', 7});
                 string msg = "Level " + to_string(currentLevel) + " clear!";
                 gambarKeBuffer(LEBAR_LAYAR / 2 - msg.length() / 2, 0, msg, 14);
                 string bingkai(PANJANG_JALAN * 2 + 6, '=');
@@ -531,16 +451,16 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
                     gambarKeBuffer(1, 4 + i, "||", 8);
                     gambarKeBuffer(4 + PANJANG_JALAN * 2, 4 + i, "||", 8);
                 }
-                for (int baris = 0; baris < TOTAL_LINTASAN; baris++) {
-                    vector<string> contents = CustomQueue_getContents(&jalur[baris]);
-                    string lineContent = "";
+                for (int baris = 0; baris < TOTAL_LINTASAN; ++baris) {
+                    auto contents = CustomQueue_getContents(&jalur[baris]);
+                    string lineContent;
                     for (const auto &s : contents)
                         lineContent += s;
                     gambarKeBuffer(4, 4 + baris, lineContent, 7);
-                    size_t pos = lineContent.find(FINISH_LINE_MARKER);
-                    while (pos != string::npos) {
+                    size_t pos = 0;
+                    while ((pos = lineContent.find(FINISH_LINE_MARKER, pos)) != string::npos) {
                         gambarKeBuffer(4 + pos, 4 + baris, FINISH_LINE_ART, 13);
-                        pos = lineContent.find(FINISH_LINE_MARKER, pos + FINISH_LINE_MARKER.length());
+                        pos += FINISH_LINE_MARKER.length();
                     }
                 }
                 int posisiY_mobil = 4 + posisiMobil * 2;
@@ -551,15 +471,12 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
                 jalurBerjalan();
                 cekTabrakan();
                 updateInvulnerable();
-                for (int i = 0; i < TOTAL_LINTASAN; i++) {
+                for (int i = 0; i < TOTAL_LINTASAN; ++i)
                     CustomQueue_updateBack(&jalur[i], (i % 2 == 1) ? SIMBOL_JALAN : SIMBOL_KOSONG);
-                }
                 if (finishLineInserted && finishLinePos >= 0) {
-                    for (int i = 0; i < TOTAL_LINTASAN; ++i) {
-                        for (int j = finishLinePos + 1; j < PANJANG_JALAN; ++j) {
+                    for (int i = 0; i < TOTAL_LINTASAN; ++i)
+                        for (int j = finishLinePos + 1; j < PANJANG_JALAN; ++j)
                             CustomQueue_setAt(&jalur[i], j, (i % 2 == 1) ? SIMBOL_JALAN : SIMBOL_KOSONG);
-                        }
-                    }
                 }
                 Sleep(max(10, 30));
             }
@@ -580,7 +497,7 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
         }
 
         if (!finishLineInserted && distanceToFinish > 0)
-            distanceToFinish--;
+            --distanceToFinish;
 
         Sleep(max(10, 40 - currentLevel * 2));
     }

@@ -304,36 +304,32 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
     Graph_addEdge(&jalanGraph, 0, 1);
     Graph_addEdge(&jalanGraph, 1, 2);
 
-    nyawa = 3; // Reset nyawa di awal game
-
-    const int totalLevel = 3;
-    const DWORD durasi = 20 * 1000;
+    nyawa = 3;
+    int level = 1;
     int score = 0;
 
-    for (int level = 1; level <= totalLevel; level++) {
-        int kecepatan, spawnRate;
-        if (level == 1) { kecepatan = 40; spawnRate = 30; } 
-        else if (level == 2) { kecepatan = 30; spawnRate = 20; } 
-        else { kecepatan = 20; spawnRate = 15; }
-
-        // Modifikasi spawnRate sesuai difficulty
-        spawnRate = static_cast<int>(spawnRate * spawnMultiplier);
+    while (nyawa > 0) { // === PERUBAHAN: infinite loop ===
+        int kecepatan = max(10, 40 - level * 2);         // === PERUBAHAN: Dinamis sesuai level ===
+        int spawnRate = max(5, static_cast<int>((30 - level * 2) * spawnMultiplier));
+        DWORD durasi = 20 * 1000;
 
         isiJalur();
         posisiMobil = 1;
         DWORD waktuMulai = GetTickCount();
-        int spawnCounter = 0;
-        int koinSpawnCounter = 0;
+        int spawnCounter = 0, koinSpawnCounter = 0;
         invulnerable = false;
         invulnerableStart = 0;
         koinShowCounter = 0;
-        int pendingKoinScore = 0;
 
+
+
+
+        // ============================================================================
         while (GetTickCount() - waktuMulai < durasi && nyawa > 0) {
             for(int i=0; i < LEBAR_LAYAR * TINGGI_LAYAR; ++i) { consoleBuffer[i] = {' ', 7}; }
 
             gambarKeBuffer(0, 0, "Kontrol: W = atas, S = bawah", 15);
-            gambarKeBuffer(0, 1, "Level: " + to_string(level) + " / " + to_string(totalLevel), 14);
+            gambarKeBuffer(0, 1, "Level: " + to_string(level), 14);
             DWORD waktuTersisa = durasi - (GetTickCount() - waktuMulai);
             gambarKeBuffer(20, 1, "| Waktu tersisa: " + to_string(waktuTersisa / 1000) + " detik", 14);
             // Hapus baris ini (duplikat nyawa)
@@ -494,29 +490,34 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
             }
             Sleep(kecepatan);
         }
-        if (nyawa <= 0) {
-            tampilkanEndScreen(score, user.empty(), user);
-            while (_kbhit()) _getch();
-            _getch();
-            break;
-        }
-        if (level < totalLevel) {
-            for(int i=0; i < LEBAR_LAYAR * TINGGI_LAYAR; ++i) { consoleBuffer[i] = {' ', 7}; }
-            string msg = "Level " + to_string(level) + " Selesai!";
-            string msg2 = "Bersiap untuk level berikutnya...";
-            gambarKeBuffer(LEBAR_LAYAR / 2 - msg.length() / 2, TINGGI_LAYAR / 2, msg, 14);
-            gambarKeBuffer(LEBAR_LAYAR / 2 - msg2.length() / 2, TINGGI_LAYAR / 2 + 1, msg2, 14);
-            tampilkanBuffer();
-            Sleep(2500);
+        // =========================================================
 
-        } else if (level == totalLevel) {
-            tampilkanEndScreen(score, user.empty(), user);
-            while (_kbhit()) _getch();
-            _getch();
-        } 
+
+
+        DWORD waktuKosong = GetTickCount();
+        while (GetTickCount() - waktuKosong < 3000 && nyawa > 0) {
+            jalurBerjalan();
+            for (int i = 0; i < TOTAL_LINTASAN; i++) {
+                CustomQueue_updateBack(&jalur[i], (i % 2 == 1) ? SIMBOL_JALAN : SIMBOL_KOSONG);
+            }
+            for (int i=0; i < LEBAR_LAYAR * TINGGI_LAYAR; ++i)
+                consoleBuffer[i] = { ' ', 7 };
+
+            gambarKeBuffer(0, 0, "Memasuki Level " + to_string(level + 1), 14);
+            tampilkanBuffer();
+
+            pindahMobil();
+            cekTabrakan();
+            updateInvulnerable();
+
+            Sleep(kecepatan);
+        }
+
+        level++; 
     }
 
     // Simpan skor ke file JSON setelah game selesai
+    tampilkanEndScreen(score, user.empty(), user);
     simpanScore(user, score);
 
     cursorInfo.bVisible = true;

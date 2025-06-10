@@ -3,7 +3,6 @@
 #include <string>
 #include <conio.h>
 #include <windows.h>
-#include <cstdlib>
 #include <ctime>
 #include <fstream>
 #include <algorithm>
@@ -126,7 +125,6 @@ int distanceToFinish = 0;
 bool finishLineInserted = false;
 bool finishLineCrossed = false;
 int currentLevel = 1;
-bool afterFinishLine = false;
 int finishLinePos = -1;
 
 using json = nlohmann::json;
@@ -253,7 +251,7 @@ void jalurBerjalan() {
     }
 }
 
-void tampilkanEndScreen(int score, bool failed, const string &user) {
+void tampilkanEndScreen(int score, const string &user) {
     fill_n(consoleBuffer, LEBAR_LAYAR * TINGGI_LAYAR, CHAR_INFO{' ', 7});
     string msg = "GAME OVER!";
     string msg3 = "Nama: " + user;
@@ -272,6 +270,10 @@ void tampilkanEndScreen(int score, bool failed, const string &user) {
     gambarKeBuffer(boxX, boxY + boxHeight - 1, topBot, 14);
     tampilkanBuffer();
     Sleep(3000);
+}
+
+int getTrackLength(int level) {
+    return 300 + (level - 1) * 50;
 }
 
 void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, string user) {
@@ -298,8 +300,6 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
     currentLevel = 1;
     distanceToFinish = getTrackLength(currentLevel);
     finishLineInserted = false;
-    finishLineCrossed = false;
-    afterFinishLine = false;
     finishLinePos = -1;
 
     while (nyawa > 0) {
@@ -315,15 +315,18 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
         gambarKeBuffer(0, 0, "Kontrol: W = atas, S = bawah", 15);
         gambarKeBuffer(0, 1, "Level: " + to_string(currentLevel), 14);
         gambarKeBuffer(15, 1, "| Score: " + to_string(score), 11);
+
+        // Place +300 right after score, Nyawa at fixed position (e.g., 50)
         int scoreStrLen = 9 + to_string(score).length();
         int plus300X = 15 + scoreStrLen + 1;
         if (koinShowCounter > 0) {
             gambarKeBuffer(plus300X, 1, "+300", 14);
             koinShowCounter--;
         }
+
+        int nyawaX = 50;
         string nyawaStr = "Nyawa: ";
         nyawaStr += string(nyawa, '\3');
-        int nyawaX = plus300X + (koinShowCounter > 0 ? 6 : 1);
         gambarKeBuffer(nyawaX, 1, "| " + nyawaStr, 12);
 
         string bingkai(PANJANG_JALAN * 2 + 6, '=');
@@ -375,9 +378,6 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
 
         spawnCounter++;
         koinSpawnCounter++;
-
-        if (!afterFinishLine && finishLineInserted && cekFinishLineCross())
-            afterFinishLine = true;
 
         if (finishLineInserted && finishLinePos >= 0) {
             for (int i = 0; i < TOTAL_LINTASAN; ++i)
@@ -436,7 +436,6 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
 
         if (finishLineInserted && cekFinishLineCross()) {
             finishLineCrossed = true;
-            afterFinishLine = true;
             if (soundEnabled)
                 PlaySound(TEXT("level.wav"), NULL, SND_FILENAME | SND_ASYNC);
             int transitionFrames = 50;
@@ -483,8 +482,6 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
             currentLevel++;
             distanceToFinish = getTrackLength(currentLevel);
             finishLineInserted = false;
-            finishLineCrossed = false;
-            afterFinishLine = false;
             finishLinePos = -1;
             isiJalur();
             posisiMobil = 1;
@@ -502,7 +499,7 @@ void mainGame(int difficulty, float spawnMultiplier, float scoreMultiplier, stri
         Sleep(max(10, 40 - currentLevel * 2));
     }
 
-    tampilkanEndScreen(score, user.empty(), user);
+    tampilkanEndScreen(score, user);
     simpanScore(user, score);
 
     cursorInfo.bVisible = true;

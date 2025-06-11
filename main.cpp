@@ -99,14 +99,13 @@ void menu() {
         case '1':
             system("CLS");
             while (true) {
-            cout << "Masukkan nama Anda (maks 12 karakter, huruf saja): ";
+            cout << "Masukkan nama Anda (maks 12 karakter, huruf dan spasi saja): ";
             getline(cin, user);
-            // Hapus spasi dari nama
-            user.erase(remove(user.begin(), user.end(), ' '), user.end());
-            // Validasi: hanya huruf dan maksimal 12 karakter
-            if (user.length() <= 12 && !user.empty() && all_of(user.begin(), user.end(), ::isalpha))
+            // Validasi: hanya huruf, spasi, dan maksimal 12 karakter
+            if (user.length() <= 12 && !user.empty() &&
+                all_of(user.begin(), user.end(), [](char c) { return isalpha(c) || c == ' '; }))
                 break;
-            cout << "Nama hanya boleh huruf dan maksimal 12 karakter! Coba lagi.\n";
+            cout << "Nama hanya boleh huruf, spasi, dan maksimal 12 karakter! Coba lagi.\n";
             system("pause");
             system("CLS");
             }

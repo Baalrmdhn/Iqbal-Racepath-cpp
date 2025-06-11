@@ -94,38 +94,21 @@ void menu() {
 
         char pilihan;
         cin >> pilihan;
-
+        cin.ignore();
         switch (pilihan) {
         case '1':
             system("CLS");
             while (true) {
-                cout << "Masukkan nama Anda (maks 12 huruf, tanpa angka/simbol): ";
-                getline(cin >> ws, user); // Ambil seluruh baris, termasuk spasi
-                // Hapus spasi di awal/akhir
-                user.erase(user.find_last_not_of(" \t\r\n") + 1);
-                user.erase(0, user.find_first_not_of(" \t\r\n"));
-                // Cek panjang
-                if (user.length() > 12) {
-                    cout << "Maaf, maksimal 12 karakter saja!\n";
-                    system("pause");
-                    system("CLS");
-                    continue;
-                }
-                // Cek hanya huruf dan spasi
-                bool valid = true;
-                for (char c : user) {
-                    if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == ' ')) {
-                        valid = false;
-                        break;
-                    }
-                }
-                if (!valid || user.empty()) {
-                    cout << "Nama hanya boleh huruf (A-Z, a-z) dan spasi. Coba lagi!\n";
-                    system("pause");
-                    system("CLS");
-                    continue;
-                }
+            cout << "Masukkan nama Anda (maks 12 karakter, huruf saja): ";
+            getline(cin, user);
+            // Hapus spasi dari nama
+            user.erase(remove(user.begin(), user.end(), ' '), user.end());
+            // Validasi: hanya huruf dan maksimal 12 karakter
+            if (user.length() <= 12 && !user.empty() && all_of(user.begin(), user.end(), ::isalpha))
                 break;
+            cout << "Nama hanya boleh huruf dan maksimal 12 karakter! Coba lagi.\n";
+            system("pause");
+            system("CLS");
             }
             cin.ignore();
             while (true) {

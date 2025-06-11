@@ -1,14 +1,14 @@
 #include <iostream>
-#include "game.h" // Meng-include header file game Anda
+#include "game.h"
 #include <fstream>
 #include <vector>
 #include <algorithm>
-#include <conio.h> // Diperlukan untuk _getch()
+#include <conio.h>
 #include <nlohmann/json.hpp>
 extern bool soundEnabled;
 using json = nlohmann::json;
 using namespace std;
-extern bool soundEnabled;
+
 void tampilkanMenuPengaturan() {
     char pilihan;
     do {
@@ -16,7 +16,6 @@ void tampilkanMenuPengaturan() {
         cout << "========================================" << endl;
         cout << "|            PENGATURAN SUARA          |" << endl;
         cout << "========================================" << endl;
-
         cout << "| 1. Sound Effects   :   " << (soundEnabled ? "[ ON ] " : "[ OFF ]") << "     |" << endl;
         cout << "|                                      |" << endl;
         cout << "| 2. Kembali ke Menu Utama             |" << endl;
@@ -33,8 +32,7 @@ void tampilkanMenuPengaturan() {
     } while (pilihan != '2');
 }
 
-void tampilkanTopScore()
-{
+void tampilkanTopScore() {
     std::ifstream in("scores.json");
     json data;
     if (in.is_open()) {
@@ -43,16 +41,13 @@ void tampilkanTopScore()
     } else {
         data = json::array();
     }
-
     std::vector<std::pair<int, std::string>> daftar;
     for (const auto &entry : data) {
         if (entry.contains("user") && entry.contains("score")) {
             daftar.emplace_back(entry["score"].get<int>(), entry["user"].get<std::string>());
         }
     }
-    
     std::sort(daftar.begin(), daftar.end(), [](const auto &a, const auto &b) { return a.first > b.first; });
-    
     std::cout << "========== TOP 10 SCORE ==========" << std::endl;
     std::cout << "| No |       Nama        |  Score   |" << std::endl;
     std::cout << "----------------------------------" << std::endl;
@@ -70,8 +65,7 @@ void tampilkanTopScore()
     system("pause");
 }
 
-bool isAlphanumeric(const std::string &s)
-{
+bool isAlphanumeric(const std::string &s) {
     if (s.empty()) return false;
     for (char c : s) {
         if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')))
@@ -80,23 +74,20 @@ bool isAlphanumeric(const std::string &s)
     return true;
 }
 
-
-void menu()
-{
+void menu() {
     int difficulty = 1;
     float spawnMultiplier = 1.0f;
     float scoreMultiplier = 1.0f;
     string user;
 
-    while (true)
-    {
+    while (true) {
         system("CLS");
         cout << "========================================" << endl;
         cout << "| No |           MENU UTAMA             |" << endl;
         cout << "========================================" << endl;
         cout << "| 1  | Play Game                        |" << endl;
-        cout << "| 2  | Pengaturan                       |" << endl; 
-        cout << "| 3  | Top Scores                       |" << endl; 
+        cout << "| 2  | Pengaturan                       |" << endl;
+        cout << "| 3  | Top Scores                       |" << endl;
         cout << "| 0  | Exit                             |" << endl;
         cout << "========================================" << endl << endl;
         cout << "Pilih opsi (0-3): ";
@@ -104,19 +95,39 @@ void menu()
         char pilihan;
         cin >> pilihan;
 
-        switch (pilihan)
-        {
-        case '1': // Play
+        switch (pilihan) {
+        case '1':
             system("CLS");
             while (true) {
-                cout << "Masukkan nama Anda (huruf & angka saja): ";
-                cin >> user;
-                if (isAlphanumeric(user)) break;
-                cout << "Nama hanya boleh huruf & angka saja. Coba lagi!\n";
-                system("pause"); 
-                system("CLS");   
+                cout << "Masukkan nama Anda (maks 12 huruf, tanpa angka/simbol): ";
+                getline(cin >> ws, user); // Ambil seluruh baris, termasuk spasi
+                // Hapus spasi di awal/akhir
+                user.erase(user.find_last_not_of(" \t\r\n") + 1);
+                user.erase(0, user.find_first_not_of(" \t\r\n"));
+                // Cek panjang
+                if (user.length() > 12) {
+                    cout << "Maaf, maksimal 12 karakter saja!\n";
+                    system("pause");
+                    system("CLS");
+                    continue;
+                }
+                // Cek hanya huruf dan spasi
+                bool valid = true;
+                for (char c : user) {
+                    if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == ' ')) {
+                        valid = false;
+                        break;
+                    }
+                }
+                if (!valid || user.empty()) {
+                    cout << "Nama hanya boleh huruf (A-Z, a-z) dan spasi. Coba lagi!\n";
+                    system("pause");
+                    system("CLS");
+                    continue;
+                }
+                break;
             }
-            cin.ignore(); 
+            cin.ignore();
             while (true) {
                 cout << "\nPilih Difficulty:" << endl;
                 cout << "1. Normal" << endl;
@@ -124,7 +135,6 @@ void menu()
                 cout << "3. Extreme" << endl;
                 cout << "Pilihan (1-3): ";
                 char diffChoice = _getch();
-
                 if (diffChoice == '1') {
                     spawnMultiplier = 1.0f; scoreMultiplier = 1.0f;
                     difficulty = 1; break;
@@ -148,18 +158,14 @@ void menu()
 
             mainGame(difficulty, spawnMultiplier, scoreMultiplier, user);
             break;
-        
-        case '2': 
-        {
-            // diganti dengan panggilan ke menu pengaturan suara.
+        case '2':
             tampilkanMenuPengaturan();
             break;
-        }
         case '3':
             system("CLS");
             tampilkanTopScore();
             break;
-        case '0': 
+        case '0':
             cout << "\nKeluar dari program\n";
             return;
         default:
@@ -170,8 +176,7 @@ void menu()
     }
 }
 
-int main()
-{
+int main() {
     menu();
     return 0;
 }

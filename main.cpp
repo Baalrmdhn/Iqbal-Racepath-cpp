@@ -65,14 +65,6 @@ void tampilkanTopScore() {
     system("pause");
 }
 
-bool isAlphanumeric(const std::string &s) {
-    if (s.empty()) return false;
-    for (char c : s) {
-        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')))
-            return false;
-    }
-    return true;
-}
 
 void menu() {
     int difficulty = 1;

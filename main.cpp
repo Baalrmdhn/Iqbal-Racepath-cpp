@@ -65,14 +65,6 @@ void tampilkanTopScore() {
     system("pause");
 }
 
-bool isAlphanumeric(const std::string &s) {
-    if (s.empty()) return false;
-    for (char c : s) {
-        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')))
-            return false;
-    }
-    return true;
-}
 
 void menu() {
     int difficulty = 1;
@@ -94,17 +86,20 @@ void menu() {
 
         char pilihan;
         cin >> pilihan;
-
+        cin.ignore();
         switch (pilihan) {
         case '1':
             system("CLS");
             while (true) {
-                cout << "Masukkan nama Anda (huruf & angka saja): ";
-                cin >> user;
-                if (isAlphanumeric(user)) break;
-                cout << "Nama hanya boleh huruf & angka saja. Coba lagi!\n";
-                system("pause");
-                system("CLS");
+            cout << "Masukkan nama Anda (maks 12 karakter, huruf dan spasi saja): ";
+            getline(cin, user);
+            // Validasi: hanya huruf, spasi, dan maksimal 12 karakter
+            if (user.length() <= 12 && !user.empty() &&
+                all_of(user.begin(), user.end(), [](char c) { return isalpha(c) || c == ' '; }))
+                break;
+            cout << "Nama hanya boleh huruf, spasi, dan maksimal 12 karakter! Coba lagi.\n";
+            system("pause");
+            system("CLS");
             }
             cin.ignore();
             while (true) {
